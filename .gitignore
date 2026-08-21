@@ -1,0 +1,10 @@
+node_modules/
+dist/
+
+# Screenshots produced by the verification scripts.
+.artifacts/
+
+# Editor and OS noise.
+.vscode/
+.DS_Store
+*.log

@@ -1,0 +1,278 @@
+/* ==========================================================================
+   BABY BATTLE - page shell and on-screen controls
+   The game itself renders to canvas; CSS only handles the frame around it.
+   ========================================================================== */
+
+:root {
+  --neon-pink: #ff3d81;
+  --neon-cyan: #3df0ff;
+  --neon-purple: #a94dff;
+  --neon-yellow: #ffd23d;
+  --bg: #05030b;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html,
+body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: var(--bg);
+  /* Block browser gestures that would fight with gameplay. */
+  overscroll-behavior: none;
+  touch-action: none;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
+  font-family: "Impact", "Arial Narrow Bold", sans-serif;
+}
+
+#app {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(ellipse at center, #150d2a 0%, #05030b 75%);
+}
+
+#game {
+  display: block;
+  /* Keep the pixel art crisp when scaled up. */
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+  box-shadow:
+    0 0 0 2px rgba(169, 77, 255, 0.35),
+    0 0 40px rgba(255, 61, 129, 0.22),
+    0 0 90px rgba(61, 240, 255, 0.12);
+  touch-action: none;
+}
+
+/* ------------------------------------------------------------ touch pad --- */
+
+#touch-layer {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.18s ease;
+}
+
+#touch-layer.touch-visible {
+  opacity: 1;
+}
+
+#touch-layer.touch-visible .touch-btn {
+  pointer-events: auto;
+}
+
+.touch-cluster {
+  position: absolute;
+  bottom: max(14px, env(safe-area-inset-bottom));
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+}
+
+.touch-left {
+  left: max(14px, env(safe-area-inset-left));
+}
+
+.touch-right {
+  right: max(14px, env(safe-area-inset-right));
+  display: grid;
+  grid-template-columns: repeat(2, auto);
+  gap: 10px;
+}
+
+.touch-btn {
+  /* Generous targets: comfortably thumb-sized on a phone in landscape. */
+  min-width: 74px;
+  height: 74px;
+  padding: 0 10px;
+  font-family: inherit;
+  font-size: 15px;
+  letter-spacing: 1px;
+  color: #fdf7ff;
+  background: rgba(20, 13, 40, 0.72);
+  border: 3px solid var(--neon-cyan);
+  border-radius: 50%;
+  backdrop-filter: blur(3px);
+  box-shadow:
+    0 0 12px rgba(61, 240, 255, 0.4),
+    inset 0 0 12px rgba(61, 240, 255, 0.15);
+  transition:
+    transform 0.06s ease,
+    box-shadow 0.06s ease,
+    background 0.06s ease;
+  touch-action: none;
+  cursor: pointer;
+}
+
+.touch-btn.is-active {
+  transform: scale(0.9);
+  background: rgba(61, 240, 255, 0.3);
+  box-shadow:
+    0 0 22px rgba(61, 240, 255, 0.85),
+    inset 0 0 18px rgba(255, 255, 255, 0.3);
+}
+
+/* Movement buttons: wider, squarer, easier to hold. */
+.tb-left,
+.tb-right {
+  min-width: 82px;
+  height: 82px;
+  font-size: 26px;
+  border-radius: 18px;
+}
+
+.tb-jump {
+  border-color: var(--neon-yellow);
+  box-shadow:
+    0 0 12px rgba(255, 210, 61, 0.4),
+    inset 0 0 12px rgba(255, 210, 61, 0.15);
+}
+
+.tb-jump.is-active {
+  background: rgba(255, 210, 61, 0.3);
+  box-shadow: 0 0 22px rgba(255, 210, 61, 0.85);
+}
+
+.tb-punch {
+  border-color: var(--neon-cyan);
+}
+
+.tb-kick {
+  border-color: var(--neon-purple);
+  box-shadow:
+    0 0 12px rgba(169, 77, 255, 0.4),
+    inset 0 0 12px rgba(169, 77, 255, 0.15);
+}
+
+.tb-kick.is-active {
+  background: rgba(169, 77, 255, 0.32);
+  box-shadow: 0 0 22px rgba(169, 77, 255, 0.85);
+}
+
+.tb-strong {
+  border-color: var(--neon-pink);
+  box-shadow:
+    0 0 12px rgba(255, 61, 129, 0.4),
+    inset 0 0 12px rgba(255, 61, 129, 0.15);
+}
+
+.tb-strong.is-active {
+  background: rgba(255, 61, 129, 0.32);
+  box-shadow: 0 0 22px rgba(255, 61, 129, 0.85);
+}
+
+.tb-block {
+  border-color: #4dffa3;
+  box-shadow:
+    0 0 12px rgba(77, 255, 163, 0.4),
+    inset 0 0 12px rgba(77, 255, 163, 0.15);
+}
+
+.tb-block.is-active {
+  background: rgba(77, 255, 163, 0.32);
+  box-shadow: 0 0 22px rgba(77, 255, 163, 0.85);
+}
+
+/* Very short viewports (phones in landscape): shrink so the pad never covers
+   the fighters' feet. */
+@media (max-height: 420px) {
+  .touch-btn {
+    min-width: 60px;
+    height: 60px;
+    font-size: 12px;
+  }
+  .tb-left,
+  .tb-right {
+    min-width: 66px;
+    height: 66px;
+    font-size: 22px;
+  }
+  .touch-cluster {
+    gap: 8px;
+  }
+}
+
+/* -------------------------------------------------------- rotate overlay --- */
+
+#rotate-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #05030b;
+  text-align: center;
+}
+
+#rotate-overlay[hidden] {
+  display: none;
+}
+
+.rotate-inner {
+  color: #fdf7ff;
+}
+
+.rotate-inner p {
+  margin-top: 30px;
+  font-size: 26px;
+  line-height: 1.45;
+  letter-spacing: 3px;
+  color: var(--neon-cyan);
+  text-shadow: 0 0 14px rgba(61, 240, 255, 0.75);
+}
+
+/* A phone outline that rotates from portrait to landscape and back. */
+.phone {
+  width: 66px;
+  height: 116px;
+  margin: 0 auto;
+  border: 5px solid var(--neon-pink);
+  border-radius: 12px;
+  box-shadow:
+    0 0 22px rgba(255, 61, 129, 0.65),
+    inset 0 0 16px rgba(255, 61, 129, 0.25);
+  animation: rotate-hint 2.4s ease-in-out infinite;
+}
+
+.phone::after {
+  content: "";
+  display: block;
+  width: 26px;
+  height: 4px;
+  margin: 8px auto 0;
+  background: var(--neon-pink);
+  border-radius: 2px;
+}
+
+@keyframes rotate-hint {
+  0%,
+  22% {
+    transform: rotate(0deg);
+  }
+  55%,
+  78% {
+    transform: rotate(-90deg);
+  }
+  100% {
+    transform: rotate(0deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .phone {
+    animation: none;
+    transform: rotate(-90deg);
+  }
+}

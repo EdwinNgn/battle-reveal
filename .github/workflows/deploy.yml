@@ -1,0 +1,64 @@
+name: Deploy to GitHub Pages
+
+# Builds the game and publishes dist/ to GitHub Pages on every push to main.
+#
+# Note the build runs the full verification suite first. If the outcome guarantee
+# or the counters ever break, the deploy fails rather than shipping a broken
+# reveal to a party.
+
+on:
+  push:
+    branches: [main]
+  # Lets you re-deploy by hand from the Actions tab without pushing anything.
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Never run two deploys at once; cancel a superseded one.
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          # 24, not 22: the verification scripts import .ts files directly, which
+          # only runs without extra flags on Node 23+. On 22 the verify step would
+          # fail and block the deploy.
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Verify game logic
+        # Headless checks only: the browser-based suites need a real Chrome and
+        # are meant to be run locally before pushing.
+        run: npm run verify
+
+      - name: Build
+        run: npm run build
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
+    />
+    <meta name="theme-color" content="#0a0714" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta
+      name="description"
+      content="BABY BATTLE - un jeu de combat d'arcade original pour votre gender reveal."
+    />
+    <title>BABY BATTLE</title>
+  </head>
+  <body>
+    <div id="app">
+      <canvas id="game" width="960" height="540" aria-label="Baby Battle arcade fighting game"></canvas>
+      <div id="touch-layer"></div>
+      <div id="rotate-overlay" hidden>
+        <div class="rotate-inner">
+          <div class="phone"></div>
+          <!-- Filled in by src/i18n/dom.ts; this is the no-JS fallback. -->
+          <p>TOURNEZ VOTRE<br />TÉLÉPHONE</p>
+        </div>
+      </div>
+    </div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
