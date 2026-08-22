@@ -53,8 +53,7 @@ export class Tsuki {
 
   constructor(seed?: number) {
     this.rng = new Rng(seed);
-    // First appearance is a little way into the session.
-    this.cooldown = this.rng.range(40, 90);
+    this.cooldown = this.rng.range(6, 14);
   }
 
   /** True when she is on screen, for the dev tools only. */
@@ -62,10 +61,19 @@ export class Tsuki {
     return this.state !== "away";
   }
 
+  /**
+   * Starts a fresh appearance schedule for a new fight.
+   *
+   * She turns up exactly once per fight, entering somewhere in the first stretch
+   * of it rather than at a fixed moment, so it still feels like she wandered in
+   * of her own accord. Called by the game when a match begins.
+   */
   reset(): void {
     this.state = "away";
     this.x = -100;
-    this.cooldown = this.rng.range(40, 90);
+    // Far enough in that the fight has started, early enough that a short match
+    // does not finish before she shows up.
+    this.cooldown = this.rng.range(5, 16);
   }
 
   update(dt: number): void {
@@ -87,11 +95,14 @@ export class Tsuki {
         const speed = this.state === "leaving" ? 62 : 38;
         this.x += this.facing * speed * dt;
 
-        // Off the far side: gone until next time.
+        // Off the far side: that was her visit for this fight.
         if (this.x < -90 || this.x > VIEW.width + 90) {
           this.state = "away";
-          // Long gap, so she stays a surprise rather than a fixture.
-          this.cooldown = this.rng.range(150, 320);
+          // A very long cooldown rather than a hard stop: one appearance per
+          // fight is the intent, but if a match runs unusually long she may
+          // eventually stroll back, which is better than her being absent from
+          // the second half of a five-minute round.
+          this.cooldown = this.rng.range(95, 150);
           return;
         }
 
@@ -156,7 +167,11 @@ export class Tsuki {
    */
   startle(hitX: number): void {
     if (this.state === "away") return;
-    if (Math.abs(hitX - this.x) > 260) return;
+    // Deliberately short range. Now that she only visits once per fight, a wide
+    // startle radius meant a single early hit could chase her off before anyone
+    // had a chance to notice her. She now only reacts to a blow landing close by,
+    // which is also more believable: a scrap across the arena is not her problem.
+    if (Math.abs(hitX - this.x) > 130) return;
     this.alert = 1;
     // Run away from the impact.
     this.facing = hitX > this.x ? -1 : 1;

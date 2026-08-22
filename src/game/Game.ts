@@ -467,6 +467,8 @@ export class Game {
 
     // A new destination for every fight.
     this.stage.setTheme(this.stages.next());
+    // Tsuki turns up once per fight, at a slightly different moment each time.
+    this.tsuki.reset();
 
     this.match = new Match(
       this.state.selectedFighter,

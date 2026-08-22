@@ -20,34 +20,46 @@ const { VIEW, PHYSICS } = await import("../src/config/gameConfig.ts");
 console.log("\nBABY BATTLE - Tsuki easter egg check\n");
 const problems = [];
 
-// --- how often is she around? ---------------------------------------------
+// --- does she appear in EVERY fight? --------------------------------------
+// This is the requirement: one visit per fight, not a random chance of one.
 {
-  // Simulate 30 minutes of game time and measure her screen time.
-  const cat = new Tsuki(0x7501);
   const dt = 1 / 60;
-  const totalSeconds = 30 * 60;
-  let visibleFrames = 0;
-  let appearances = 0;
-  let wasVisible = false;
+  // Real matches run roughly 60-210s; test the short end hardest, since that is
+  // where a late entrance would mean missing her entirely.
+  const durations = [45, 60, 90, 120, 180];
+  let missed = 0;
+  let checked = 0;
 
-  for (let i = 0; i < totalSeconds / dt; i++) {
-    cat.update(dt);
-    if (cat.visible) {
-      visibleFrames++;
-      if (!wasVisible) appearances++;
+  console.log("  appearance per fight, across match lengths:");
+  for (const seconds of durations) {
+    let seenIn = 0;
+    const runs = 40;
+    let totalVisible = 0;
+
+    for (let r = 0; r < runs; r++) {
+      const cat = new Tsuki(0x4000 + r * 7919);
+      cat.reset();
+      let visibleFrames = 0;
+      for (let i = 0; i < seconds / dt; i++) {
+        cat.update(dt);
+        if (cat.visible) visibleFrames++;
+      }
+      if (visibleFrames > 0) seenIn++;
+      totalVisible += visibleFrames;
+      checked++;
+      if (visibleFrames === 0) missed++;
     }
-    wasVisible = cat.visible;
-  }
 
-  const fraction = visibleFrames / (totalSeconds / dt);
-  const perHour = appearances * 2;
-  console.log(
-    `  screen time: ${(fraction * 100).toFixed(1)}% of 30 min, ` +
-      `${appearances} appearances (~${perHour}/hour)`,
-  );
-  // Rare enough to be a find, common enough that somebody notices during a party.
-  if (fraction > 0.12) problems.push(`on screen ${(fraction * 100).toFixed(0)}% of the time - too often`);
-  if (appearances < 2) problems.push(`only ${appearances} appearances in 30 min - too rare to be spotted`);
+    const avgSecs = totalVisible / runs / 60;
+    console.log(
+      `    ${String(seconds).padStart(3)}s fight: seen in ${seenIn}/${runs} ` +
+        `(on screen ~${avgSecs.toFixed(0)}s)`,
+    );
+    if (seenIn < runs) {
+      problems.push(`in a ${seconds}s fight she was absent from ${runs - seenIn}/${runs} runs`);
+    }
+  }
+  console.log(`    total: missed in ${missed}/${checked} fights`);
 }
 
 // --- does she use her whole behaviour repertoire? --------------------------
