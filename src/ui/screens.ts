@@ -286,16 +286,16 @@ export function drawPlayerTurn(
   if (decider) {
     // The scores are level and this single fight settles everything. Make the
     // moment as loud as the game can manage.
-    drawText(ctx, tr().finalBattle, cx, 108, {
-      size: 92,
+    drawText(ctx, tr().finalBattle, cx, 92, {
+      size: 78,
       color: PALETTE.neonYellow,
       glow: PALETTE.neonPink,
       glowSize: 24 + pulse * 24,
       depth: 7,
       letterSpacing: 7,
     });
-    drawText(ctx, tr().scoresLevel, cx, 162, {
-      size: 24,
+    drawText(ctx, tr().scoresLevel, cx, 140, {
+      size: 22,
       color: PALETTE.white,
       stroke: null,
       letterSpacing: 3,
@@ -305,9 +305,9 @@ export function drawPlayerTurn(
       ctx,
       state.isExtraFinalTurn ? tr().anyoneCanPlay : tr().playerN(state.currentPlayer),
       cx,
-      206,
+      176,
       {
-        size: 34,
+        size: 30,
         color: PALETTE.neonCyan,
         glow: PALETTE.neonCyan,
         glowSize: 12,
@@ -316,8 +316,8 @@ export function drawPlayerTurn(
       },
     );
   } else {
-    drawText(ctx, tr().playerN(state.currentPlayer), cx, 118, {
-      size: 82,
+    drawText(ctx, tr().playerN(state.currentPlayer), cx, 96, {
+      size: 66,
       color: PALETTE.neonCyan,
       glow: PALETTE.neonCyan,
       glowSize: 18 + pulse * 16,
@@ -328,8 +328,8 @@ export function drawPlayerTurn(
 
   // Remind each participant which side they are fighting for.
   if (!decider) {
-    drawText(ctx, tr().fightingFor(teamName), cx, 178, {
-      size: 34,
+    drawText(ctx, tr().fightingFor(teamName), cx, 146, {
+      size: 30,
       color: teamColors.barGlow,
       glow: teamColors.primary,
       glowSize: 12,
@@ -344,13 +344,13 @@ export function drawPlayerTurn(
         ctx,
         tr().fightXofY(state.currentPlayer, state.announcedFights),
         cx,
-        216,
-        { size: 20, color: PALETTE.neonYellow, stroke: null, letterSpacing: 3 },
+        178,
+        { size: 19, color: PALETTE.neonYellow, stroke: null, letterSpacing: 3 },
       );
     }
   } else {
-    drawText(ctx, tr().forTeam(teamName), cx, 246, {
-      size: 26,
+    drawText(ctx, tr().forTeam(teamName), cx, 208, {
+      size: 24,
       color: teamColors.barGlow,
       glow: teamColors.primary,
       glowSize: 10,
@@ -360,9 +360,76 @@ export function drawPlayerTurn(
   }
 
   // Running score, so everyone knows what is at stake.
-  if (scores && state.history.length > 0) {
-    drawTeamScore(ctx, scores, 320, time);
+  const showScore = Boolean(scores) && state.history.length > 0;
+  if (scores && showScore) {
+    drawTeamScore(ctx, scores, 258, time);
   }
+
+  // --- rules reminder ---------------------------------------------------
+  // Sits at the bottom of the turn card, which every participant passes through.
+  // Worded for the situation: solo, multiplayer, or the decider.
+  let rules: readonly string[];
+  if (decider) {
+    rules = tr().rulesDecider;
+  } else if (state.announcedFights > 1) {
+    const full = tr().rulesMulti(state.announcedFights);
+    // Once the scoreboard is on screen there is no room for all four lines, and
+    // by then everyone has read them anyway. Keep the two that still matter:
+    // what a win is worth, and what happens at the end.
+    rules = showScore ? full.slice(1, 3) : full;
+  } else {
+    rules = tr().rulesSolo;
+  }
+
+  drawRulesPanel(ctx, rules, showScore ? 300 : 250, time);
+}
+
+/**
+ * Small framed panel listing the rules, one short line each.
+ *
+ * Deliberately low-contrast: it needs to be readable but must not compete with
+ * the player number or the FIGHT button. Players read this once and then ignore
+ * it, so quiet is the right register.
+ */
+function drawRulesPanel(
+  ctx: CanvasRenderingContext2D,
+  lines: readonly string[],
+  topY: number,
+  time: number,
+): void {
+  const cx = VIEW.width / 2;
+  const lineH = 22;
+  const padY = 16;
+  const h = padY * 2 + 20 + lines.length * lineH;
+  const w = 660;
+  const x = cx - w / 2;
+
+  ctx.save();
+  ctx.fillStyle = "rgba(8,5,18,0.62)";
+  ctx.fillRect(x, topY, w, h);
+  ctx.strokeStyle = PALETTE.neonPurple;
+  ctx.globalAlpha = 0.55;
+  ctx.lineWidth = 2;
+  ctx.strokeRect(x, topY, w, h);
+  ctx.restore();
+
+  drawText(ctx, tr().rulesTitle, cx, topY + padY + 4, {
+    size: 17,
+    color: PALETTE.neonYellow,
+    stroke: null,
+    letterSpacing: 4,
+    alpha: 0.75 + 0.15 * Math.sin(time * 2),
+  });
+
+  lines.forEach((line, i) => {
+    drawText(ctx, line, cx, topY + padY + 30 + i * lineH, {
+      size: 18,
+      color: "#d8ccf0",
+      stroke: null,
+      letterSpacing: 0.5,
+      alpha: 0.9,
+    });
+  });
 }
 
 // -------------------------------------------------------- characterSelect ----

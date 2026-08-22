@@ -73,6 +73,15 @@ export interface Strings {
   forTeam: (team: string) => string;
   settleIt: string;
 
+  /**
+   * Rules reminder on the turn card, as short lines so it fits on one screen.
+   * Solo and multiplayer are worded differently because the stakes differ.
+   */
+  rulesTitle: string;
+  rulesSolo: string[];
+  rulesMulti: (fights: number) => string[];
+  rulesDecider: string[];
+
   // controls
   controlsTitle: string;
   move: string;
@@ -158,6 +167,22 @@ const FR: Strings = {
   forTeam: (team) => `POUR L'ÉQUIPE ${team}`,
   settleIt: "TOUT DONNER !",
 
+  rulesTitle: "RÈGLE DU JEU",
+  rulesSolo: [
+    "Affrontez l'ordinateur en un combat.",
+    "L'équipe qui gagne est celle du sexe du bébé.",
+  ],
+  rulesMulti: (fights) => [
+    "Chaque joueur affronte l'ordinateur à son tour.",
+    "Chaque combat gagné vaut 1 point pour son équipe.",
+    `Après les ${fights} combats, l'équipe qui mène est celle du sexe du bébé.`,
+    "En cas d'égalité, un combat décisif départage.",
+  ],
+  rulesDecider: [
+    "Les scores sont à égalité.",
+    "Le vainqueur de ce combat révèle le sexe du bébé.",
+  ],
+
   controlsTitle: "COMMANDES",
   move: "SE DÉPLACER",
   jump: "SAUTER",
@@ -236,6 +261,22 @@ const EN: Strings = {
   anyoneCanPlay: "ANYONE CAN PLAY THIS ONE",
   forTeam: (team) => `FOR TEAM ${team}`,
   settleIt: "SETTLE IT!",
+
+  rulesTitle: "HOW IT WORKS",
+  rulesSolo: [
+    "Take on the computer in a single fight.",
+    "The winning team is the baby's sex.",
+  ],
+  rulesMulti: (fights) => [
+    "Each player takes on the computer in turn.",
+    "Every fight won scores 1 point for that team.",
+    `After all ${fights} fights, the leading team is the baby's sex.`,
+    "If the scores are level, a decider settles it.",
+  ],
+  rulesDecider: [
+    "The scores are level.",
+    "Whoever wins this fight reveals the baby's sex.",
+  ],
 
   controlsTitle: "CONTROLS",
   move: "MOVE",

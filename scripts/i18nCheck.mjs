@@ -159,7 +159,13 @@ const overflow = await evaluate(`(async () => {
     move: [25, 300], jump: [25, 300], punch: [25, 300],
     kick: [25, 300], strong: [25, 300], block: [25, 300],
     reduceDamage: [25, 300], slowHeavy: [25, 300], fastLight: [25, 300],
+    rulesTitle: [17, 620],
   };
+
+  // The rules are arrays of lines, each drawn at 18px inside a 660px panel.
+  // Checked separately since the budget table only handles single strings.
+  const RULES_SIZE = 18;
+  const RULES_SPACE = 620;
   const bad = [];
   for (const lang of ["fr", "en"]) {
     m.setLang(lang);
@@ -173,6 +179,26 @@ const overflow = await evaluate(`(async () => {
       if (w > space) bad.push({ lang, key, text: String(text), width: Math.round(w), space });
     }
   }
+  for (const lang of ["fr", "en"]) {
+    m.setLang(lang);
+    const s = m.t();
+    const groups = {
+      rulesSolo: s.rulesSolo,
+      rulesDecider: s.rulesDecider,
+      rulesMulti8: s.rulesMulti(8),
+    };
+    for (const [key, lines] of Object.entries(groups)) {
+      lines.forEach((line, i) => {
+        ctx.font = RULES_SIZE + "px " + FONT;
+        ctx.letterSpacing = "0.5px";
+        const w = ctx.measureText(line).width;
+        if (w > RULES_SPACE) {
+          bad.push({ lang, key: key + "[" + i + "]", text: line, width: Math.round(w), space: RULES_SPACE });
+        }
+      });
+    }
+  }
+
   m.setLang("fr");
   return bad;
 })()`);
