@@ -136,25 +136,41 @@ const report = await evaluate(`(() => {
     return +(lit / n).toFixed(3);
   };
 
-  // Look for each fighter's signature hue anywhere in the arena band.
-  // male primary #3d8bff (blue dominant), female primary #ff3d81 (red dominant).
+  // Look for each fighter's signature hue in the band they occupy.
+  //
+  // The thresholds are tight on purpose. The travel backdrops introduced warm
+  // facades, lanterns and violet lighting, and a loose hue test picked those up
+  // as "fighter pixels", which made the span measurement meaningless. Requiring a
+  // strong, saturated match to the exact sprite colours - male #3d8bff, female
+  // #ff3d81 - keeps this measuring the fighters and not the scenery.
   let bluePixels = 0, pinkPixels = 0;
-  let blueMinX = 1e9, blueMaxX = -1, pinkMinX = 1e9, pinkMaxX = -1;
+  const blueXs = [], pinkXs = [];
   for (let y = 300; y < 470; y += 2) {
     for (let x = 0; x < 960; x += 2) {
       const [r, g, b] = at(x, y);
-      if (b > 150 && b - r > 55 && g < b) {
+      // Male: blue clearly dominant over BOTH other channels.
+      if (b > 170 && b - r > 90 && b - g > 60) {
         bluePixels++;
-        if (x < blueMinX) blueMinX = x;
-        if (x > blueMaxX) blueMaxX = x;
+        blueXs.push(x);
       }
-      if (r > 160 && r - b > 55 && g < 120) {
+      // Female: red dominant, green suppressed, and not a warm orange (which is
+      // what lanterns and sandstone are).
+      if (r > 190 && r - b > 60 && r - g > 90 && b > 70) {
         pinkPixels++;
-        if (x < pinkMinX) pinkMinX = x;
-        if (x > pinkMaxX) pinkMaxX = x;
+        pinkXs.push(x);
       }
     }
   }
+
+  // Use the median rather than min/max: a handful of stray matches in the
+  // backdrop would otherwise stretch the span across the whole screen.
+  const median = (arr) => {
+    if (!arr.length) return null;
+    const s = [...arr].sort((a, b) => a - b);
+    return s[Math.floor(s.length / 2)];
+  };
+  const blueMid = median(blueXs);
+  const pinkMid = median(pinkXs);
 
   return {
     hudLeft: regionLit(40, 30, 380, 62),
@@ -170,8 +186,7 @@ const report = await evaluate(`(() => {
     })(),
     sky: regionLit(0, 90, 960, 140),
     bluePixels, pinkPixels,
-    blueSpan: blueMaxX < 0 ? null : [blueMinX, blueMaxX],
-    pinkSpan: pinkMaxX < 0 ? null : [pinkMinX, pinkMaxX],
+    blueMid, pinkMid,
   };
 })()`);
 
@@ -185,13 +200,14 @@ if (report.hudRight < 0.15) problems.push("right health bar missing or dark");
 if (report.floorMeanBrightness < 12) problems.push("arena floor not visible");
 if (report.bluePixels < 60) problems.push(`male fighter colours barely present (${report.bluePixels}px)`);
 if (report.pinkPixels < 60) problems.push(`female fighter colours barely present (${report.pinkPixels}px)`);
-// The two fighters should be in different places, not stacked on one spot.
-if (report.blueSpan && report.pinkSpan) {
-  const overlap =
-    Math.min(report.blueSpan[1], report.pinkSpan[1]) -
-    Math.max(report.blueSpan[0], report.pinkSpan[0]);
-  const blueW = report.blueSpan[1] - report.blueSpan[0];
-  if (overlap > blueW * 0.9) problems.push("fighters appear to occupy the same space");
+// The two fighters must be in different places, not stacked on one spot.
+// Compared via their midpoints, which is robust to a few stray colour matches in
+// the backdrop; the fighters start about 380px apart.
+if (report.blueMid !== null && report.pinkMid !== null) {
+  const gap = Math.abs(report.blueMid - report.pinkMid);
+  if (gap < 40) {
+    problems.push(`fighters appear to occupy the same space (midpoints ${gap}px apart)`);
+  }
 }
 
 if (problems.length) {

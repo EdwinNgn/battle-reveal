@@ -6,6 +6,7 @@ import { PlayerController } from "../fighters/PlayerController.ts";
 import { emptyIntent } from "../fighters/Fighter.ts";
 import { Renderer } from "../rendering/Renderer.ts";
 import { Stage } from "../rendering/Stage.ts";
+import { StageRotation } from "../rendering/stages/index.ts";
 import { ParticleSystem } from "../rendering/ParticleSystem.ts";
 import { drawFighter } from "../rendering/FighterSprite.ts";
 import { FIGHTER_COLORS, PALETTE } from "../rendering/palette.ts";
@@ -63,7 +64,10 @@ const MAX_FRAME_DT = 0.25;
  */
 export class Game {
   private renderer: Renderer;
-  private stage = new Stage();
+  /** Public so scripts/stageShots.mjs can force a stage for screenshots. */
+  readonly stage = new Stage();
+  /** Deals a different backdrop to each fight, no repeats until all are used. */
+  private stages = new StageRotation();
   private particles = new ParticleSystem();
   private hud = new HUD();
   private state = new GameState();
@@ -454,6 +458,9 @@ export class Game {
     // help. Early fights usually come back "fair" and run completely honestly.
     const plan = this.director.plan();
 
+    // A new destination for every fight.
+    this.stage.setTheme(this.stages.next());
+
     this.match = new Match(
       this.state.selectedFighter,
       undefined,
@@ -549,6 +556,8 @@ export class Game {
         s.currentPlayer = 1;
         s.history = [];
         s.resetRounds();
+        // Fresh shuffle of destinations for this session.
+        this.stages.reset();
         // The whole room picks one team before anybody fights.
         this.transition(() => this.goto("teamSelect"));
         break;
@@ -729,6 +738,18 @@ export class Game {
           alpha: a,
         });
       }
+      // Name the destination during the intro, so the change of scenery is part
+      // of the moment rather than something people only half-notice.
+      drawText(ctx, this.stage.current.name, cx, 152, {
+        size: 44,
+        color: PALETTE.white,
+        glow: PALETTE.neonCyan,
+        glowSize: 16,
+        depth: 3,
+        letterSpacing: 8,
+        alpha: Math.min(1, p * 3) * (p > 0.8 ? Math.max(0, (1 - p) * 5) : 1),
+      });
+
       if (p >= 0.4) {
         const a = Math.min(1, (p - 0.4) * 5);
         const scale = 0.7 + Math.min(1, (p - 0.4) * 4) * 0.3;

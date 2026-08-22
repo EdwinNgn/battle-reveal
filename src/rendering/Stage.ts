@@ -1,199 +1,107 @@
 import { VIEW } from "../config/gameConfig.ts";
-import { Rng } from "../core/rng.ts";
-import { PALETTE } from "./palette.ts";
+import { stars as drawStars } from "./stages/draw.ts";
+import { LILLE_STAGE, type StageTheme } from "./stages/index.ts";
 
 /**
- * "ARCADE NEON" - the one fighting stage.
+ * Renders whichever stage theme is currently active.
  *
- * A night city skyline behind a lit arena floor, drawn procedurally. The layout
- * is generated once from a fixed seed so it looks designed rather than random,
- * then animated with subtle parallax and flickering signage. Kept low-contrast
- * on purpose so the fighters always read clearly against it.
+ * The sky, floor and star field are common to every stage and handled here; each
+ * theme only supplies its palette and the silhouettes in between. That keeps the
+ * themes short and guarantees a consistent look: same horizon line, same lit
+ * floor edge, same perspective grid, so the fighters always read the same way
+ * whatever the backdrop.
  */
-
-interface Building {
-  x: number;
-  w: number;
-  h: number;
-  layer: number;
-  windowSeed: number;
-}
-
-interface Sign {
-  x: number;
-  y: number;
-  w: number;
-  h: number;
-  color: string;
-  /** Flicker phase offset. */
-  phase: number;
-  speed: number;
-}
-
-const SIGN_COLORS = [
-  PALETTE.neonPink,
-  PALETTE.neonCyan,
-  PALETTE.neonPurple,
-  PALETTE.neonYellow,
-  PALETTE.neonGreen,
-];
-
 export class Stage {
-  private buildings: Building[] = [];
-  private signs: Sign[] = [];
+  private theme: StageTheme = LILLE_STAGE;
   private time = 0;
+  /** Counts up while a newly set stage fades in. */
+  private introFade = 0;
 
-  constructor() {
-    const rng = new Rng(0xbabe17);
+  get current(): StageTheme {
+    return this.theme;
+  }
 
-    // Three parallax layers, furthest first.
-    for (let layer = 0; layer < 3; layer++) {
-      let x = -120;
-      const maxH = 120 + layer * 95;
-      const minH = 60 + layer * 55;
-      while (x < VIEW.width + 200) {
-        const w = rng.range(46, 104) + layer * 12;
-        this.buildings.push({
-          x,
-          w,
-          h: rng.range(minH, maxH),
-          layer,
-          windowSeed: rng.int(1, 99999),
-        });
-        x += w + rng.range(6, 26);
-      }
-    }
-
-    // Neon signage on the nearest layer.
-    for (let i = 0; i < 14; i++) {
-      const w = rng.range(14, 54);
-      this.signs.push({
-        x: rng.range(20, VIEW.width - 60),
-        y: rng.range(70, 300),
-        w,
-        h: rng.range(6, 16),
-        color: rng.pick(SIGN_COLORS),
-        phase: rng.range(0, Math.PI * 2),
-        speed: rng.range(0.6, 3.4),
-      });
-    }
+  /** Switches stage and restarts its animation clock. */
+  setTheme(theme: StageTheme): void {
+    this.theme = theme;
+    this.time = 0;
+    this.introFade = 0;
   }
 
   update(dt: number): void {
     this.time += dt;
+    if (this.introFade < 1) this.introFade = Math.min(1, this.introFade + dt * 1.6);
   }
 
   /**
    * @param cameraX average fighter position, drives the parallax
    */
   draw(ctx: CanvasRenderingContext2D, cameraX: number): void {
+    const p = this.theme.palette;
     const t = this.time;
+    // Positive when the fighters are left of centre, so the backdrop slides the
+    // opposite way. Scaled per layer by the themes.
+    const shift = -(cameraX - VIEW.width / 2) * 0.14;
 
-    // --- sky gradient ---
+    // --- sky ---------------------------------------------------------------
     const sky = ctx.createLinearGradient(0, 0, 0, VIEW.floorY);
-    sky.addColorStop(0, PALETTE.bgDeep);
-    sky.addColorStop(0.55, PALETTE.bgMid);
-    sky.addColorStop(1, PALETTE.bgFar);
+    sky.addColorStop(0, p.skyTop);
+    sky.addColorStop(0.55, p.skyMid);
+    sky.addColorStop(1, p.skyHorizon);
     ctx.fillStyle = sky;
     ctx.fillRect(0, 0, VIEW.width, VIEW.floorY);
 
-    // --- distant glow band on the horizon ---
-    const glow = ctx.createLinearGradient(0, VIEW.floorY - 190, 0, VIEW.floorY);
-    glow.addColorStop(0, "rgba(169,77,255,0)");
-    glow.addColorStop(1, "rgba(255,61,129,0.22)");
+    // --- stars, night stages only -----------------------------------------
+    if (this.theme.stars) {
+      drawStars(ctx, 0x57a25, t, 90, VIEW.floorY - 180, VIEW.width);
+    }
+
+    // --- horizon haze ------------------------------------------------------
+    const glow = ctx.createLinearGradient(0, VIEW.floorY - 200, 0, VIEW.floorY);
+    glow.addColorStop(0, "rgba(0,0,0,0)");
+    glow.addColorStop(1, p.glow);
     ctx.fillStyle = glow;
-    ctx.fillRect(0, VIEW.floorY - 190, VIEW.width, 190);
+    ctx.fillRect(0, VIEW.floorY - 200, VIEW.width, 200);
 
-    // --- buildings, back to front ---
-    const centre = VIEW.width / 2;
-    for (let layer = 0; layer < 3; layer++) {
-      // Nearer layers shift more with the camera.
-      const factor = 0.008 + layer * 0.014;
-      const offset = -(cameraX - centre) * factor;
-      const shades = ["#191036", "#221545", "#2c1b57"];
-      const baseY = VIEW.floorY - 6 + layer * 3;
-
-      for (const b of this.buildings) {
-        if (b.layer !== layer) continue;
-        const x = b.x + offset;
-        if (x + b.w < -40 || x > VIEW.width + 40) continue;
-
-        ctx.fillStyle = shades[layer];
-        ctx.fillRect(x, baseY - b.h, b.w, b.h);
-
-        // Lit windows. Deterministic per building, with a few flickering.
-        const rng = new Rng(b.windowSeed);
-        const cols = Math.max(1, Math.floor(b.w / 13));
-        const rows = Math.max(1, Math.floor(b.h / 17));
-        for (let cx = 0; cx < cols; cx++) {
-          for (let cy = 0; cy < rows; cy++) {
-            if (!rng.chance(0.34)) continue;
-            const flicker = rng.chance(0.12);
-            let alpha = 0.5 + layer * 0.12;
-            if (flicker) {
-              alpha *= 0.45 + 0.55 * (Math.sin(t * 3 + cx * 2.1 + cy) > 0.4 ? 1 : 0.15);
-            }
-            ctx.fillStyle =
-              rng.chance(0.22)
-                ? `rgba(61,240,255,${alpha * 0.75})`
-                : `rgba(255,210,120,${alpha * 0.7})`;
-            ctx.fillRect(
-              Math.round(x + 5 + cx * 13),
-              Math.round(baseY - b.h + 7 + cy * 17),
-              5,
-              7,
-            );
-          }
-        }
-      }
-    }
-
-    // --- neon signs on the nearest layer ---
-    const signOffset = -(cameraX - centre) * 0.05;
-    for (const s of this.signs) {
-      const pulse = 0.55 + 0.45 * Math.sin(t * s.speed + s.phase);
-      ctx.save();
-      ctx.globalAlpha = 0.28 + pulse * 0.5;
-      ctx.shadowColor = s.color;
-      ctx.shadowBlur = 16;
-      ctx.fillStyle = s.color;
-      ctx.fillRect(s.x + signOffset, s.y, s.w, s.h);
-      ctx.restore();
-    }
+    // --- the stage's own scenery -------------------------------------------
+    this.theme.drawBackdrop(ctx, t, shift, VIEW.floorY);
 
     this.drawFloor(ctx, cameraX);
+
+    // Foreground details sit over the floor but behind the fighters.
+    this.theme.drawForeground?.(ctx, t, shift, VIEW.floorY);
   }
 
   private drawFloor(ctx: CanvasRenderingContext2D, cameraX: number): void {
+    const p = this.theme.palette;
     const y = VIEW.floorY;
 
-    // Floor slab.
     const g = ctx.createLinearGradient(0, y, 0, VIEW.height);
-    g.addColorStop(0, "#2a1a52");
-    g.addColorStop(0.25, PALETTE.floor);
-    g.addColorStop(1, "#0d0820");
+    g.addColorStop(0, p.floorTop);
+    g.addColorStop(0.25, p.floorMid);
+    g.addColorStop(1, p.floorDeep);
     ctx.fillStyle = g;
     ctx.fillRect(0, y, VIEW.width, VIEW.height - y);
 
-    // Bright edge where the floor meets the backdrop.
-    ctx.fillStyle = PALETTE.neonCyan;
+    // Bright line where the floor meets the backdrop: separates the fighters
+    // from the scenery and gives every stage the same sense of a lit arena.
+    ctx.fillStyle = p.floorEdge;
     ctx.globalAlpha = 0.75;
     ctx.fillRect(0, y - 2, VIEW.width, 2);
-    ctx.globalAlpha = 1;
-    ctx.fillStyle = "rgba(61,240,255,0.12)";
+    ctx.globalAlpha = 0.12;
     ctx.fillRect(0, y, VIEW.width, 10);
+    ctx.globalAlpha = 1;
 
-    // Perspective floor lines, scrolling with the camera for a sense of space.
+    // Perspective lines splaying towards the viewer.
     const offset = -(cameraX - VIEW.width / 2) * 0.16;
-    ctx.strokeStyle = PALETTE.floorLine;
+    ctx.strokeStyle = p.floorLine;
     ctx.lineWidth = 2;
     ctx.globalAlpha = 0.5;
     const spacing = 96;
     for (let i = -2; i < VIEW.width / spacing + 4; i++) {
       const lineX = i * spacing + (offset % spacing);
-      ctx.beginPath();
-      // Lines splay outwards as they come toward the viewer.
       const spread = (lineX - VIEW.width / 2) * 0.55;
+      ctx.beginPath();
       ctx.moveTo(lineX, y);
       ctx.lineTo(lineX + spread, VIEW.height);
       ctx.stroke();
