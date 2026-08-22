@@ -6,6 +6,7 @@ import { PlayerController } from "../fighters/PlayerController.ts";
 import { emptyIntent } from "../fighters/Fighter.ts";
 import { Renderer } from "../rendering/Renderer.ts";
 import { Stage } from "../rendering/Stage.ts";
+import { Tsuki } from "../rendering/Tsuki.ts";
 import { StageRotation } from "../rendering/stages/index.ts";
 import { ParticleSystem } from "../rendering/ParticleSystem.ts";
 import { drawFighter } from "../rendering/FighterSprite.ts";
@@ -69,6 +70,8 @@ export class Game {
   /** Deals a different backdrop to each fight, no repeats until all are used. */
   private stages = new StageRotation();
   private particles = new ParticleSystem();
+  /** A small easter egg who wanders through now and then. */
+  private tsuki = new Tsuki();
   private hud = new HUD();
   private state = new GameState();
   private director = new ScoreDirector(1);
@@ -275,6 +278,7 @@ export class Game {
     }
 
     this.stage.update(dt);
+    this.tsuki.update(dt);
     this.particles.update(dt);
     this.renderer.updateShake(dt);
     if (this.hitFreeze > 0) this.hitFreeze -= dt;
@@ -344,6 +348,9 @@ export class Game {
         }
       }
       this.renderer.addShake(hit.shake);
+
+      // A solid blow landing close by sends her off: ears back, tail up.
+      if (hit.kind === "strong" || hit.ko) this.tsuki.startle(hit.x);
 
       if (hit.ko) {
         audio.play("ko");
@@ -657,6 +664,9 @@ export class Game {
   private drawMenuScreen(ctx: CanvasRenderingContext2D, rawDt: number): void {
     // Menus share the arena backdrop, dimmed, so the whole app feels of a piece.
     this.stage.draw(ctx, VIEW.width / 2);
+    // She wanders through the menus too, drawn before the dimming layer so she
+    // sits back in the scene rather than on top of the interface.
+    this.tsuki.draw(ctx, VIEW.floorY);
     ctx.fillStyle = "rgba(6,4,14,0.62)";
     ctx.fillRect(0, 0, VIEW.width, VIEW.height);
 
@@ -702,6 +712,10 @@ export class Game {
 
     const cameraX = (match.player.x + match.cpu.x) / 2;
     this.stage.draw(ctx, cameraX);
+
+    // Tsuki strolls along the back of the floor, so she is drawn before the
+    // fighters and can never obscure the action.
+    this.tsuki.draw(ctx, VIEW.floorY);
 
     // Draw the fighter further from the camera first for a sane overlap order.
     const order =

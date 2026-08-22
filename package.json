@@ -11,7 +11,7 @@
     "typecheck": "tsc --noEmit",
     "simulate": "node src/dev/runSimulations.ts",
     "simulate:teams": "node src/dev/runTeamSimulations.ts",
-    "verify": "node scripts/proveDirector.mjs && node src/dev/runSimulations.ts 10 && node src/dev/runTeamSimulations.ts 10 && node scripts/smokeTest.mjs && node scripts/flowCheck.mjs && node scripts/counterCheck.mjs && node scripts/stageCheck.mjs",
+    "verify": "node scripts/proveDirector.mjs && node src/dev/runSimulations.ts 10 && node src/dev/runTeamSimulations.ts 10 && node scripts/smokeTest.mjs && node scripts/flowCheck.mjs && node scripts/counterCheck.mjs && node scripts/stageCheck.mjs && node scripts/tsukiCheck.mjs",
     "verify:browser": "node scripts/browserCheck.mjs && node scripts/visualCheck.mjs && node scripts/keyCheck.mjs && node scripts/playabilityCheck.mjs && node scripts/i18nCheck.mjs && node scripts/fullscreenCheck.mjs && node scripts/mobileCheck.mjs && node scripts/stageShots.mjs"
   },
   "devDependencies": {
