@@ -171,14 +171,24 @@ console.log(`  requestFullscreen attempted on button press: ${fsAttempt}`);
 if (!fsAttempt) problems.push("requestFullscreen was not attempted on a touch button press");
 
 // --- the iOS hint only shows on iOS ----------------------------------------
-const hintLogic = await evaluate(`(async () => {
-  const fs = await import("/src/input/fullscreen.ts");
-  return { isIos: fs.isIos(), standalone: fs.isStandalone(), supported: fs.fullscreenSupported() };
-})()`);
-console.log("  platform:", JSON.stringify(hintLogic));
-// Emulated Chrome is not iOS, so the hint must be suppressed here.
-if (hintLogic.isIos) {
-  problems.push("isIos() true under emulated Chrome - detection is too loose");
+// This probes the module directly, which only exists on the dev server: a
+// production build has everything compiled into one bundle. Skipped when running
+// against a deployed URL.
+const hasSources = (await fetch(new URL("src/input/fullscreen.ts", URL_BASE).href)).ok;
+if (hasSources) {
+  const hintLogic = await evaluate(`(async () => {
+    const fs = await import("/src/input/fullscreen.ts");
+    return { isIos: fs.isIos(), standalone: fs.isStandalone(), supported: fs.fullscreenSupported() };
+  })()`);
+  console.log("  platform:", JSON.stringify(hintLogic));
+  // Emulated Chrome is not a real iPhone, so the hint must stay hidden here.
+  // Without the vendor check this returned true and desktop users would have
+  // been told to add the page to their home screen.
+  if (hintLogic.isIos) {
+    problems.push("isIos() true under emulated Chrome - detection is too loose");
+  }
+} else {
+  console.log("  platform: (source probe skipped, running against a built site)");
 }
 
 console.log(`\n  page exceptions: ${errors.length}`);
