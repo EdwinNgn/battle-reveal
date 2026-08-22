@@ -37,7 +37,11 @@ export function titleButtons(): Button[] {
   ];
 }
 
-export function drawTitle(ctx: CanvasRenderingContext2D, time: number): void {
+export function drawTitle(
+  ctx: CanvasRenderingContext2D,
+  time: number,
+  showIosHint = false,
+): void {
   const cx = VIEW.width / 2;
 
   // Big stacked logo with a pulsing glow.
@@ -91,13 +95,25 @@ export function drawTitle(ctx: CanvasRenderingContext2D, time: number): void {
     alpha: 0.75 + pulse * 0.25,
   });
 
-  drawText(ctx, tr().credit, cx, 520, {
-    size: 14,
-    color: PALETTE.neonYellow,
-    stroke: null,
-    letterSpacing: 3,
-    alpha: 0.5,
-  });
+  // On iOS the browser bars cannot be hidden from JavaScript, so point people at
+  // the one thing that does work. Only shown where it is actually relevant.
+  if (showIosHint) {
+    drawText(ctx, tr().iosFullscreenHint, cx, 518, {
+      size: 15,
+      color: PALETTE.neonCyan,
+      stroke: null,
+      letterSpacing: 1,
+      alpha: 0.55 + pulse * 0.25,
+    });
+  } else {
+    drawText(ctx, tr().credit, cx, 520, {
+      size: 14,
+      color: PALETTE.neonYellow,
+      stroke: null,
+      letterSpacing: 3,
+      alpha: 0.5,
+    });
+  }
 }
 
 // --------------------------------------------------------------- settings ----

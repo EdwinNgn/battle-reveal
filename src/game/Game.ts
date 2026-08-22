@@ -40,6 +40,14 @@ import { GameState } from "./GameState.ts";
 import { Match } from "./Match.ts";
 import { ScoreDirector } from "../balancing/ScoreDirector.ts";
 import { t as tr, toggleLang } from "../i18n/strings.ts";
+import {
+  enterFullscreen,
+  fullscreenSupported,
+  isFullscreen,
+  isIos,
+  isStandalone,
+  lockLandscape,
+} from "../input/fullscreen.ts";
 import { applyDomStrings } from "../i18n/dom.ts";
 import type { FighterId } from "../config/secretConfig.ts";
 
@@ -420,6 +428,24 @@ export class Game {
     this.goto("reveal");
   }
 
+  /**
+   * Asks for fullscreen on touch devices, from inside a user gesture.
+   *
+   * Called when a button is activated, because browsers only grant fullscreen
+   * during a real interaction. On Android this hides the address bar and tab
+   * strip; on iOS Safari it does nothing, since there fullscreen is only
+   * available by adding the page to the home screen.
+   */
+  private requestFullscreenIfUseful(): void {
+    if (!this.usingTouch) return;
+    if (isStandalone() || isFullscreen()) return;
+    if (!fullscreenSupported()) return;
+    void enterFullscreen().then((ok) => {
+      // Landscape lock only works once fullscreen, so chain it.
+      if (ok) void lockLandscape();
+    });
+  }
+
   private startMatch(): void {
     // In team mode the director decides how much this particular match may be
     // steered; most early matches come back "fair" and run completely honestly.
@@ -470,6 +496,9 @@ export class Game {
 
   private activate(id: string): void {
     audio.unlock();
+    // Every button press is a user gesture, which is the only moment a browser
+    // will grant fullscreen. Cheap to attempt and a no-op once already there.
+    this.requestFullscreenIfUseful();
     const s = this.state;
 
     // Settings toggles happen in place, with no transition.
@@ -625,7 +654,8 @@ export class Game {
     const s = this.state;
     switch (s.screen) {
       case "title":
-        drawTitle(ctx, this.time);
+        // iOS cannot hide the browser bars, so suggest Add to Home Screen there.
+        drawTitle(ctx, this.time, this.usingTouch && isIos() && !isStandalone());
         break;
       case "settings":
         drawSettings(ctx);

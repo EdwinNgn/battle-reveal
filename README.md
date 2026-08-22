@@ -130,6 +130,26 @@ AZERTY et QWERTY.
 **Téléphone** — tenez l'appareil en paysage : les boutons tactiles apparaissent
 pendant le combat, déplacements à gauche, attaques à droite.
 
+### Plein écran sur téléphone
+
+**Android** — automatique. Dès le premier appui sur un bouton, le jeu passe en
+plein écran et la barre d'adresse disparaît. L'orientation est aussi verrouillée
+en paysage, donc le message « tournez votre téléphone » ne revient plus.
+
+**iPhone** — Safari ne permet pas à une page de masquer sa propre barre d'adresse.
+La seule vraie solution est d'ajouter le jeu à l'écran d'accueil :
+
+1. Ouvrir le lien dans Safari
+2. Bouton **Partager** (le carré avec une flèche)
+3. **Sur l'écran d'accueil**
+4. Lancer le jeu depuis la nouvelle icône
+
+Il s'ouvre alors sans aucune barre de navigateur. Le jeu affiche discrètement ce
+rappel sur l'écran titre quand il détecte un iPhone.
+
+C'est la manière recommandée de faire jouer les invités sur iPhone : ça prend
+quinze secondes et le résultat est bien meilleur.
+
 ### Langue
 
 Le jeu est en français par défaut. Le drapeau en haut à droite de l'écran titre

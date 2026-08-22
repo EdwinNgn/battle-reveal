@@ -7,9 +7,24 @@
       content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
     />
     <meta name="theme-color" content="#0a0714" />
+
+    <!--
+      Fullscreen on phones.
+
+      Android: the game calls requestFullscreen() on the first button press,
+      which hides the address bar and tab strip outright.
+
+      iOS: Safari has no API to hide its own chrome, so the only route to real
+      fullscreen is "Add to Home Screen". These tags make the page launch
+      standalone from that icon, with no browser UI at all.
+    -->
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="BABY BATTLE" />
+    <link rel="manifest" href="./manifest.webmanifest" />
+    <link rel="apple-touch-icon" href="./icon-512.png" />
+    <link rel="icon" type="image/png" href="./icon-512.png" />
     <meta
       name="description"
       content="BABY BATTLE - un jeu de combat d'arcade original pour votre gender reveal."

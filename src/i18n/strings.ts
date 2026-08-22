@@ -32,6 +32,8 @@ export interface Strings {
   settings: string;
   titleHint: string;
   credit: string;
+  /** Shown on iOS only, where fullscreen needs Add to Home Screen. */
+  iosFullscreenHint: string;
 
   // settings
   settingsTitle: string;
@@ -120,6 +122,7 @@ const FR: Strings = {
   settings: "OPTIONS",
   titleHint: "Choisissez votre équipe. Une seule peut gagner.",
   credit: "INSÉREZ DE LA JOIE  •  1 CRÉDIT",
+  iosFullscreenHint: "Astuce : Partager → Sur l'écran d'accueil pour le plein écran",
 
   settingsTitle: "OPTIONS",
   music: "MUSIQUE",
@@ -198,6 +201,7 @@ const EN: Strings = {
   settings: "SETTINGS",
   titleHint: "Choose your team. Only one can win.",
   credit: "INSERT JOY  •  1 CREDIT",
+  iosFullscreenHint: "Tip: Share → Add to Home Screen for fullscreen",
 
   settingsTitle: "SETTINGS",
   music: "MUSIC",
