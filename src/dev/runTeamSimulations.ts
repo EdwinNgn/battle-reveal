@@ -22,6 +22,7 @@
  * ahead while reporting how honest the session felt.
  */
 
+import { TEAM_PACING } from "../config/gameConfig.ts";
 import type { FighterId } from "../config/secretConfig.ts";
 import { ScoreDirector, teamOf } from "../balancing/ScoreDirector.ts";
 import { Rng } from "../core/rng.ts";
@@ -92,7 +93,7 @@ function runSession(
     const profile = rng.pick(CROWD_PROFILES[crowd]);
     const seed = (seedBase ^ ((i + 1) * 2654435761)) >>> 0;
 
-    const outcome = simulateMatch(playerTeam, profile, seed, plan.favour, plan.mode);
+    const outcome = simulateMatch(playerTeam, profile, seed, plan.favour, plan.mode, TEAM_PACING);
     director.record(outcome.winner);
 
     const s = director.scores;

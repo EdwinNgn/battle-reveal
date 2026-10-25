@@ -173,6 +173,31 @@ export const MATCH = {
   koSequenceMs: 3200,
 } as const;
 
+/** Match length targets used by the pacing system. */
+export interface MatchPacing {
+  targetDurationMs: number;
+  minDurationMs: number;
+  maxDurationMs: number;
+}
+
+/** One player: the full-length fight. */
+export const SOLO_PACING: MatchPacing = {
+  targetDurationMs: MATCH.targetDurationMs,
+  minDurationMs: MATCH.minDurationMs,
+  maxDurationMs: MATCH.maxDurationMs,
+};
+
+/** Several players share the room, so each fight is kept short. */
+export const TEAM_PACING: MatchPacing = {
+  targetDurationMs: 75_000,
+  minDurationMs: 55_000,
+  maxDurationMs: 90_000,
+};
+
+export function pacingFor(players: number): MatchPacing {
+  return players > 1 ? TEAM_PACING : SOLO_PACING;
+}
+
 export type RoundMode = 1 | 3;
 
 export const DEFAULTS = {

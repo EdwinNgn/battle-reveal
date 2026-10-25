@@ -1,4 +1,4 @@
-import { MATCH, VIEW, type RoundMode } from "../config/gameConfig.ts";
+import { MATCH, VIEW, pacingFor, type RoundMode } from "../config/gameConfig.ts";
 import { audio } from "../audio/AudioManager.ts";
 import { KeyboardInput } from "../input/KeyboardInput.ts";
 import { TouchInput, isTouchDevice } from "../input/TouchInput.ts";
@@ -475,6 +475,7 @@ export class Game {
       undefined,
       plan.favour,
       plan.mode,
+      pacingFor(this.state.totalPlayers),
     );
     this.hud.reset();
     this.particles.clear();

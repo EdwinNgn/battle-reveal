@@ -1,4 +1,4 @@
-import { COMBAT } from "../config/gameConfig.ts";
+import { COMBAT, type MatchPacing } from "../config/gameConfig.ts";
 import type { BalanceMode } from "../balancing/SecretBalanceSystem.ts";
 import type { FighterId } from "../config/secretConfig.ts";
 import { Rng } from "../core/rng.ts";
@@ -41,8 +41,9 @@ export function simulateMatch(
   seed: number,
   expectedWinner?: FighterId,
   mode: BalanceMode = "must",
+  pacing?: MatchPacing,
 ): SimOutcome {
-  const match = new Match(playerFighter, seed, expectedWinner, mode);
+  const match = new Match(playerFighter, seed, expectedWinner, mode, pacing);
   const player = new SyntheticPlayer(profile, new Rng(seed ^ 0x5bf03635));
 
   let playerLowest = 1;

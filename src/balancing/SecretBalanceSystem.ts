@@ -1,4 +1,4 @@
-import { COMBAT, MATCH } from "../config/gameConfig.ts";
+import { COMBAT, SOLO_PACING, type MatchPacing } from "../config/gameConfig.ts";
 import type { FighterId } from "../config/secretConfig.ts";
 import type { Fighter } from "../fighters/Fighter.ts";
 import type { CpuBias } from "../fighters/ComputerController.ts";
@@ -171,9 +171,12 @@ export class SecretBalanceSystem {
   /** Diagnostic only: whether the exhaustion fallback was ever needed. */
   private exhausting = false;
 
-  constructor(winnerId: FighterId, mode: BalanceMode = "must") {
+  private readonly lengths: MatchPacing;
+
+  constructor(winnerId: FighterId, mode: BalanceMode = "must", lengths: MatchPacing = SOLO_PACING) {
     this.winnerId = winnerId;
     this.mode = mode;
+    this.lengths = lengths;
   }
 
   reset(): void {
@@ -242,7 +245,7 @@ export class SecretBalanceSystem {
     if (this.mode === "fair") {
       winner.modifiers = neutralModifiers();
       loser.modifiers = neutralModifiers();
-      this.progress = clamp01(this.elapsedMs / MATCH.targetDurationMs);
+      this.progress = clamp01(this.elapsedMs / this.lengths.targetDurationMs);
       this.phase = this.progress < 0.3 ? "early" : this.progress < 0.65 ? "mid" : "late";
       // Pacing still applies so fair matches last a sensible length, but it is
       // symmetric: it never favours either fighter.
@@ -250,7 +253,7 @@ export class SecretBalanceSystem {
       return;
     }
 
-    this.progress = clamp01(this.elapsedMs / MATCH.targetDurationMs);
+    this.progress = clamp01(this.elapsedMs / this.lengths.targetDurationMs);
     this.phase = this.progress < 0.3 ? "early" : this.progress < 0.65 ? "mid" : "late";
 
     const winnerPct = winner.health / COMBAT.maxHealth;
@@ -290,16 +293,16 @@ export class SecretBalanceSystem {
     this.pacing = 1;
     this.overrun = 0;
     const lowest = Math.min(winnerPct, loserPct);
-    if (this.elapsedMs < MATCH.minDurationMs && lowest < 0.3) {
+    if (this.elapsedMs < this.lengths.minDurationMs && lowest < 0.3) {
       // Somebody is about to die well before the two minute mark.
-      const earliness = 1 - this.elapsedMs / MATCH.minDurationMs;
+      const earliness = 1 - this.elapsedMs / this.lengths.minDurationMs;
       const closeness = 1 - lowest / 0.3;
       this.pacing = 1 - TUNING.earlyKoSoftening * earliness * closeness;
-    } else if (this.elapsedMs > MATCH.maxDurationMs) {
+    } else if (this.elapsedMs > this.lengths.maxDurationMs) {
       // Overrunning: encourage a finish rather than forcing one. Usually this
       // means a very defensive player, so both fighters start hitting harder
       // and the exchanges get more decisive.
-      this.overrun = clamp01((this.elapsedMs - MATCH.maxDurationMs) / 20_000);
+      this.overrun = clamp01((this.elapsedMs - this.lengths.maxDurationMs) / 20_000);
       this.pacing = 1 + TUNING.latePushGain * this.overrun;
     }
 
@@ -334,12 +337,12 @@ export class SecretBalanceSystem {
     this.pacing = 1;
     this.overrun = 0;
 
-    if (this.elapsedMs < MATCH.minDurationMs && lowest < 0.3) {
-      const earliness = 1 - this.elapsedMs / MATCH.minDurationMs;
+    if (this.elapsedMs < this.lengths.minDurationMs && lowest < 0.3) {
+      const earliness = 1 - this.elapsedMs / this.lengths.minDurationMs;
       const closeness = 1 - lowest / 0.3;
       this.pacing = 1 - TUNING.earlyKoSoftening * earliness * closeness;
-    } else if (this.elapsedMs > MATCH.maxDurationMs) {
-      this.overrun = clamp01((this.elapsedMs - MATCH.maxDurationMs) / 20_000);
+    } else if (this.elapsedMs > this.lengths.maxDurationMs) {
+      this.overrun = clamp01((this.elapsedMs - this.lengths.maxDurationMs) / 20_000);
       this.pacing = 1 + TUNING.latePushGain * this.overrun;
     }
 

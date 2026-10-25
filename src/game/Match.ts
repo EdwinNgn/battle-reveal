@@ -1,4 +1,4 @@
-import { MATCH, VIEW } from "../config/gameConfig.ts";
+import { MATCH, SOLO_PACING, VIEW, type MatchPacing } from "../config/gameConfig.ts";
 import { WINNING_FIGHTER, type FighterId } from "../config/secretConfig.ts";
 import { Rng } from "../core/rng.ts";
 import { SecretBalanceSystem, type BalanceMode } from "../balancing/SecretBalanceSystem.ts";
@@ -54,6 +54,7 @@ export class Match {
     seed?: number,
     winnerOverride?: FighterId,
     mode: BalanceMode = "must",
+    pacing: MatchPacing = SOLO_PACING,
   ) {
     this.playerFighterId = playerFighterId;
     const cpuFighterId: FighterId = playerFighterId === "male" ? "female" : "male";
@@ -64,7 +65,7 @@ export class Match {
 
     const rng = new Rng(seed);
     this.cpuController = new ComputerController(rng);
-    this.balance = new SecretBalanceSystem(winnerOverride ?? WINNING_FIGHTER, mode);
+    this.balance = new SecretBalanceSystem(winnerOverride ?? WINNING_FIGHTER, mode, pacing);
   }
 
   get isOver(): boolean {
